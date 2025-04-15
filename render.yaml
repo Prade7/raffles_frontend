@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: resume-parser-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REACT_APP_API_URL
+        value: https://your-backend-url.onrender.com
+    healthCheckPath: /
+    autoDeploy: true 
