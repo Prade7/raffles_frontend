@@ -4,7 +4,7 @@ import ResumeTable from './ResumeTable';
 import { useAuth } from '../context/AuthContext';
 import { uploadResume, getResumes, logoutUser } from '../utils/api';
 import { getFilterValues } from '../utils/filters';
-import type { ResumeData, ParsedResume, FilterValues, FilterParams } from '../types';
+import type { ResumeData, FilterValues, FilterParams } from '../types';
 
 interface Notification {
   type: 'success' | 'error';
@@ -16,6 +16,7 @@ function Dashboard() {
   const [resumeData, setResumeData] = useState<ResumeData[]>([]);
   const [filterValues, setFilterValues] = useState<FilterValues | null>(null);
   const [filters, setFilters] = useState<FilterParams>({});
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -37,6 +38,11 @@ function Dashboard() {
       loadResumes();
     }
   }, [accessToken, currentPage]);
+
+  useEffect(() => {
+    const hasFilters = Object.values(filters).some(value => value !== undefined && value !== '');
+    setHasActiveFilters(hasFilters);
+  }, [filters]);
 
   const loadFilters = async () => {
     try {
@@ -74,53 +80,38 @@ function Dashboard() {
     try {
       if (!accessToken) return;
       setIsLoading(true);
-      const filterParams = {
-        ...filters,
-        ...(searchQuery && { search: searchQuery }),
-        limit: ITEMS_PER_PAGE,
-        offset: (currentPage - 1) * ITEMS_PER_PAGE
-      };
-      console.log('Applying filters:', filterParams);
-      const response = await fetch('/api/list_data', {
-        method: 'POST',
-        headers: {
-          'access': accessToken,
-          'Content-Type': 'application/json',
+      setError(null);
+
+      console.log('Loading resumes for page:', currentPage);
+      console.log('Current filters:', filters);
+      console.log('Search query:', searchQuery);
+
+      const response = await getResumes(
+        accessToken,
+        {
+          ...filters,
+          ...(searchQuery ? { search: searchQuery } : {})
         },
-        body: JSON.stringify(filterParams)
-      });
+        currentPage,
+        ITEMS_PER_PAGE
+      );
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch resumes');
-      }
-
-      const data = await response.json();
-      console.log('Raw response from list_data:', data);
+      console.log('Raw API response:', response);
+      console.log('Response type:', typeof response);
+      console.log('Is array:', Array.isArray(response));
+      console.log('Response keys:', Object.keys(response));
       
-      // Ensure we have the correct data structure
-      if (Array.isArray(data)) {
-        console.log('Data is an array, setting directly');
-        setResumeData(data);
-        setTotalCount(data.length);
-        setTotalPages(Math.ceil(data.length / ITEMS_PER_PAGE));
-      } else if (data.resumes) {
-        console.log('Data has resumes property');
-        setResumeData(data.resumes);
-        setTotalCount(data.total_count || data.resumes.length);
-        setTotalPages(Math.ceil((data.total_count || data.resumes.length) / ITEMS_PER_PAGE));
-      } else {
-        console.log('Unexpected data structure:', data);
-        setResumeData([]);
-        setTotalCount(0);
-        setTotalPages(1);
+      if (response.resumes) {
+        console.log('Resumes array length:', response.resumes.length);
+        console.log('First resume:', response.resumes[0]);
       }
+
+      setResumeData(response.resumes || []);
+      setTotalCount(response.totalCount || 0);
+      setTotalPages(Math.ceil((response.totalCount || 0) / ITEMS_PER_PAGE));
     } catch (err) {
-      if (err instanceof Error && err.message === 'token_expired') {
-        handleTokenExpired();
-      } else {
-        setError('Failed to load resumes');
-        console.error('Error loading resumes:', err);
-      }
+      console.error('Error loading resumes:', err);
+      setError('Failed to load resumes');
     } finally {
       setIsLoading(false);
     }
@@ -156,20 +147,27 @@ function Dashboard() {
       setIsUploading(true);
       setError(null);
 
-      const parsedResumes = await uploadResume(selectedFiles, accessToken);
+      // Upload the files
+      await uploadResume(selectedFiles, accessToken);
       
-      setResumeData(prev => [
-        ...prev,
-        ...parsedResumes.map(resume => ({
-          ...resume,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          profile_id: Date.now() + Math.random() // temporary ID
-        }))
-      ]);
-
+      // Clear the selected files and reset the file input
       setSelectedFiles([]);
-      showNotification('success', `Successfully uploaded ${parsedResumes.length} file(s)`);
+      const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+
+      // Show success notification
+      showNotification('success', `Successfully uploaded ${selectedFiles.length} file(s)`);
+      
+      // Call list_data and filter in the background
+      Promise.all([
+        loadResumes(),
+        loadFilters()
+      ]).catch(err => {
+        console.error('Error loading data after upload:', err);
+        setError('Failed to refresh data after upload');
+      });
     } catch (err) {
       if (err instanceof Error && err.message === 'token_expired') {
         handleTokenExpired();
@@ -186,25 +184,23 @@ function Dashboard() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleApplyFilters = async () => {
-    setIsLoading(true);
-    try {
-      await loadResumes();
-    } catch (err) {
-      console.error('Error applying filters:', err);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleFilterChange = (key: keyof FilterParams, value: string | undefined) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   const clearFilters = () => {
     setFilters({});
     setSearchQuery('');
-    loadResumes(); // Reload data after clearing filters
+    loadResumes();
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Searching with query:', searchQuery);
+    setCurrentPage(1);
     loadResumes();
   };
 
@@ -219,8 +215,20 @@ function Dashboard() {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const handlePageChange = (newPage: number) => {
+    console.log('Changing to page:', newPage, 'Total pages:', totalPages);
+    if (newPage < 1 || newPage > totalPages) {
+      console.log('Invalid page number');
+      return;
+    }
+    setCurrentPage(newPage);
+  };
+
+  const handleApplyFilters = async () => {
+    if (!hasActiveFilters) return;
+    console.log('Applying filters:', filters);
+    setCurrentPage(1);
+    await loadResumes();
   };
 
   return (
@@ -388,15 +396,18 @@ function Dashboard() {
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={clearFilters}
-                        className="text-sm text-gray-600 hover:text-gray-800"
+                        disabled={!hasActiveFilters}
+                        className={`text-sm text-gray-600 hover:text-gray-800 ${
+                          !hasActiveFilters ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                       >
                         Clear filters
                       </button>
                       <button
                         onClick={handleApplyFilters}
-                        disabled={isLoading}
+                        disabled={!hasActiveFilters || isLoading}
                         className={`px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-all flex items-center space-x-2 ${
-                          isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                          !hasActiveFilters || isLoading ? 'opacity-75 cursor-not-allowed' : ''
                         }`}
                       >
                         {isLoading ? (
@@ -417,69 +428,23 @@ function Dashboard() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Sector
-                      </label>
-                      <select
-                        value={filters.sector || ''}
-                        onChange={(e) => setFilters(prev => ({ ...prev, sector: e.target.value || undefined }))}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      >
-                        <option value="">All Sectors</option>
-                        {filterValues.sector.map(sector => (
-                          <option key={sector} value={sector}>{sector}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Sub-sector
-                      </label>
-                      <select
-                        value={filters.subsector || ''}
-                        onChange={(e) => setFilters(prev => ({ ...prev, subsector: e.target.value || undefined }))}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      >
-                        <option value="">All Sub-sectors</option>
-                        {filterValues.subsector.map(subsector => (
-                          <option key={subsector} value={subsector}>{subsector}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Location
-                      </label>
-                      <select
-                        value={filters.location || ''}
-                        onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value || undefined }))}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      >
-                        <option value="">All Locations</option>
-                        {filterValues.location.map(location => (
-                          <option key={location} value={location}>{location}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Experience
-                      </label>
-                      <select
-                        value={filters.experience || ''}
-                        onChange={(e) => setFilters(prev => ({ ...prev, experience: e.target.value || undefined }))}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      >
-                        <option value="">All Experience</option>
-                        {filterValues.experience.map(range => (
-                          <option key={range} value={range}>{range}</option>
-                        ))}
-                      </select>
-                    </div>
+                    {Object.entries(filterValues).map(([key, values]) => (
+                      <div key={key}>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')}
+                        </label>
+                        <select
+                          value={filters[key as keyof FilterParams] || ''}
+                          onChange={(e) => handleFilterChange(key as keyof FilterParams, e.target.value || undefined)}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                          <option value="">All {key.replace('_', ' ')}</option>
+                          {values.filter(Boolean).map((value: string) => (
+                            <option key={value} value={value}>{value}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
