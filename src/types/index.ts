@@ -7,6 +7,11 @@ export interface LoginResponse {
   message?: string;
 }
 
+export interface ResumeListResponse {
+  resume_data: ResumeData[];
+  total_count: number;
+}
+
 export interface ResumeData {
   subsector: string;
   expected_salary: string | null;

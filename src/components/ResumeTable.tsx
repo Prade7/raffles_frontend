@@ -23,12 +23,6 @@ function ResumeTable({ data, setData }: ResumeTableProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [notification, setNotification] = useState<Notification | null>(null);
 
-  console.log('ResumeTable received data:', data);
-  console.log('Data length:', data.length);
-  if (data.length > 0) {
-    console.log('First item:', data[0]);
-  }
-
   const handleEdit = (item: ResumeData) => {
     setEditingId(item.profile_id);
     setEditData({ ...item });

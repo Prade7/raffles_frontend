@@ -78,25 +78,8 @@ export async function uploadResume(files: File[], accessToken: string): Promise<
     const parsedData = await parseResponse.json();
     console.log('Resumes parsed successfully:', parsedData);
 
-    // Step 4: Call filter API to update filter values
-    console.log('Step 4: Calling filter API');
-    const filterResponse = await fetch('/api/filter', {
-      method: 'POST',
-      headers: {
-        'access': accessToken,
-        'Content-Type': 'application/json',
-      }
-    });
-
-    if (!filterResponse.ok) {
-      const errorText = await filterResponse.text();
-      console.error('Filter API failed with status:', filterResponse.status);
-      console.error('Error response:', errorText);
-      throw new Error('Failed to update filters');
-    }
-
-    // Step 5: Fetch updated list data
-    console.log('Step 5: Fetching updated list data');
+    // Step 4: Fetch updated list data
+    console.log('Step 4: Fetching updated list data');
     const listResponse = await fetch('/api/list_data', {
       method: 'POST',
       headers: {
@@ -130,19 +113,8 @@ export async function uploadResume(files: File[], accessToken: string): Promise<
   }
 }
 
-export async function getResumes(
-  accessToken: string, 
-  filters?: FilterParams, 
-  page: number = 1, 
-  limit: number = 20
-): Promise<{ resumes: ResumeData[]; totalCount: number }> {
-  const requestBody = {
-    ...filters,
-    limit,
-    offset: (page - 1) * limit
-  };
-  
-  console.log('Request body:', requestBody);
+export async function getResumes(accessToken: string, filters?: FilterParams): Promise<ResumeData[]> {
+  console.log('Fetching resumes with filters:', filters);
 
   const response = await fetch('/api/list_data', {
     method: 'POST',
@@ -150,45 +122,21 @@ export async function getResumes(
       'access': accessToken,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify(filters || {}),
   });
+
+  const data = await response.json();
+  console.log('Resume list response:', data);
 
   if (response.status === 400) {
     throw new Error('token_expired');
   }
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Failed to fetch resumes');
+    throw new Error(data.message || 'Failed to fetch resumes');
   }
 
-  const data = await response.json();
-  console.log('Raw API response:', data);
-
-  // Handle different response formats
-  if (Array.isArray(data)) {
-    console.log('Response is an array');
-    return {
-      resumes: data,
-      totalCount: data.length
-    };
-  } else if (typeof data === 'object' && data !== null) {
-    console.log('Response is an object');
-    const resumes = data.resumes || data.data || [];
-    const totalCount = data.total_count || data.totalCount || resumes.length;
-    console.log('Extracted resumes:', resumes);
-    console.log('Extracted total count:', totalCount);
-    return {
-      resumes,
-      totalCount
-    };
-  } else {
-    console.error('Unexpected response format:', data);
-    return {
-      resumes: [],
-      totalCount: 0
-    };
-  }
+  return data;
 }
 
 interface UpdateProfileData {

@@ -1,4 +1,4 @@
-import type { LoginResponse } from '../types';
+import type { LoginResponse } from '../types/index';
 
 /**
  * Authenticates user with domain ID and password

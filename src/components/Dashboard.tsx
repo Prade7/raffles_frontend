@@ -4,7 +4,7 @@ import ResumeTable from './ResumeTable';
 import { useAuth } from '../context/AuthContext';
 import { uploadResume, getResumes, logoutUser } from '../utils/api';
 import { getFilterValues } from '../utils/filters';
-import type { ResumeData, FilterValues, FilterParams } from '../types';
+import type { ResumeData, FilterValues, FilterParams } from '../types/index';
 
 interface Notification {
   type: 'success' | 'error';
@@ -97,18 +97,15 @@ function Dashboard() {
       );
 
       console.log('Raw API response:', response);
-      console.log('Response type:', typeof response);
-      console.log('Is array:', Array.isArray(response));
-      console.log('Response keys:', Object.keys(response));
       
-      if (response.resumes) {
-        console.log('Resumes array length:', response.resumes.length);
-        console.log('First resume:', response.resumes[0]);
+      if (response.resume_data) {
+        console.log('Resumes array length:', response.resume_data.length);
+        console.log('First resume:', response.resume_data[0]);
       }
 
-      setResumeData(response.resumes || []);
-      setTotalCount(response.totalCount || 0);
-      setTotalPages(Math.ceil((response.totalCount || 0) / ITEMS_PER_PAGE));
+      setResumeData(response.resume_data || []);
+      setTotalCount(response.total_count || 0);
+      setTotalPages(Math.ceil((response.total_count || 0) / ITEMS_PER_PAGE));
     } catch (err) {
       console.error('Error loading resumes:', err);
       setError('Failed to load resumes');
