@@ -6,11 +6,11 @@ frontend:
         - npm ci
     build:
       commands:
-        - npm run build
+        - npx vite build
   artifacts:
     baseDirectory: dist
     files:
       - '**/*'
   cache:
     paths:
-      - node_modules/**/* 
+      - node_modules/**/*
