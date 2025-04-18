@@ -1,29 +1,32 @@
-import type { FilterValues } from '../types/index';
+import type { FilterValues } from '../types';
+
+const API_URL = 'https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws';
 
 /**
  * Fetches available filter values from the API
  * @param accessToken - User's access token
  * @returns FilterValues containing available filter options
  */
-export async function getFilterValues(accessToken: string): Promise<FilterValues> {
-  const response = await fetch('/api/filter', {
-    method: 'POST',
-    headers: {
-      'access': accessToken,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({})
-  });
+export const getFilterValues = async (accessToken: string): Promise<FilterValues> => {
+  try {
+    const response = await fetch(`${API_URL}/filter-values`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
 
-  const data = await response.json();
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token expired');
+      }
+      throw new Error('Failed to fetch filter values');
+    }
 
-  if (response.status === 400) {
-    throw new Error('token_expired');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching filter values:', error);
+    throw error;
   }
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch filter values');
-  }
-
-  return data;
-}
+};

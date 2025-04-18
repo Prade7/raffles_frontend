@@ -1,114 +1,58 @@
 import type { ResumeData, ParsedResume, FilterParams } from '../types/index';
 import { getPresignedUrl } from './presignedUrl';
 
-export async function uploadResume(files: File[], accessToken: string): Promise<ParsedResume[]> {
+const API_URL = import.meta.env.VITE_MAIN_API_URL;
+const PARSE_API_URL = import.meta.env.VITE_PARSE_API_URL;
+
+export const uploadResume = async (file: File, accessToken: string): Promise<ResumeData> => {
   try {
-    // Step 1: Get presigned URLs for all files
-    console.log('Step 1: Getting presigned URLs for files:', files.map(f => f.name));
-    const presignedUrls = await getPresignedUrl(files.map(f => f.name), accessToken);
-    console.log('Received presigned URLs:', presignedUrls);
+    const response = await fetch(`${API_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: file
+    });
 
-    // Step 2: Upload all files using presigned URLs
-    console.log('Step 2: Uploading files to presigned URLs');
-    const uploadPromises = files.map(async (file, index) => {
-      const presignedUrl = presignedUrls[index];
-      console.log('Uploading file:', file.name);
-      console.log('Using presigned URL:', presignedUrl.url);
-      console.log('Generated filename:', presignedUrl.file_name);
-      console.log('File type:', file.type);
-      console.log('File size:', file.size, 'bytes');
-
-      try {
-        const uploadResponse = await fetch(presignedUrl.url, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type
-          },
-          mode: 'cors'
-        });
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error('Upload failed with status:', uploadResponse.status);
-          console.error('Error response:', errorText);
-          throw new Error(`Upload failed for ${file.name}: ${errorText}`);
-        }
-
-        console.log('File uploaded successfully:', file.name);
-        return {
-          original_name: file.name,
-          file_name: presignedUrl.file_name
-        };
-      } catch (error) {
-        console.error('Error during file upload:', error);
-        if (error instanceof Error) {
-          console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          });
-        }
-        throw error;
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token expired');
       }
-    });
-
-    const uploadedFiles = await Promise.all(uploadPromises);
-    console.log('All files uploaded successfully:', uploadedFiles);
-
-    // Step 3: Call parse API with the uploaded files
-    console.log('Step 3: Calling parse API');
-    const parseResponse = await fetch('https://tf7hw5m2253i2atsm2q3mke5em0jmxfh.lambda-url.ap-south-1.on.aws/parse', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        files: uploadedFiles
-      })
-    });
-
-    if (!parseResponse.ok) {
-      const errorText = await parseResponse.text();
-      console.error('Parse API failed with status:', parseResponse.status);
-      console.error('Error response:', errorText);
-      throw new Error(`Failed to parse resumes: ${errorText}`);
+      throw new Error('Failed to upload resume');
     }
 
-    const parsedData = await parseResponse.json();
-    console.log('Resumes parsed successfully:', parsedData);
-
-    // Step 4: Fetch updated list data
-    console.log('Step 4: Fetching updated list data');
-    const listResponse = await fetch('/api/list_data', {
-      method: 'POST',
-      headers: {
-        'access': accessToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({})
-    });
-
-    if (!listResponse.ok) {
-      const errorText = await listResponse.text();
-      console.error('Failed to fetch updated list:', errorText);
-      throw new Error('Failed to fetch updated list');
-    }
-
-    const updatedList = await listResponse.json();
-    console.log('Updated list fetched successfully');
-    return updatedList;
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Resume upload process failed:', error);
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      if (error.message === 'token_expired') {
-        throw error;
-      }
-    }
+    console.error('Error uploading resume:', error);
     throw error;
   }
-}
+};
+
+export const parseResume = async (file: File, accessToken: string): Promise<ResumeData> => {
+  try {
+    const response = await fetch(`${PARSE_API_URL}/parse`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: file
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token expired');
+      }
+      throw new Error('Failed to parse resume');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error parsing resume:', error);
+    throw error;
+  }
+};
 
 export async function getResumes(accessToken: string, filters?: FilterParams): Promise<ResumeData[]> {
   console.log('Fetching resumes with filters:', filters);

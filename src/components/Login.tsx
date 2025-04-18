@@ -17,6 +17,7 @@ function Login() {
 
     try {
       const data = await loginUser(domainId, password);
+      console.log(domainId, password);
       setAuthData(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

@@ -4,33 +4,33 @@ interface PresignedUrlResponse {
   url: string;
 }
 
-export async function getPresignedUrl(filenames: string[], accessToken: string): Promise<PresignedUrlResponse[]> {
-  console.log('Requesting presigned URLs for files:', filenames);
-  
-  const response = await fetch('/api/presigned_url', {
-    method: 'POST',
-    headers: {
-      'access': accessToken,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      files: filenames,
-      signatureType: 'upload'
-    }),
-  });
+const API_URL = import.meta.env.VITE_MAIN_API_URL;
 
-  if (response.status === 400) {
-    throw new Error('token_expired');
+export const getPresignedUrl = async (filenames: string[], accessToken: string): Promise<PresignedUrlResponse[]> => {
+  try {
+    const response = await fetch(`${API_URL}/presigned-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ filenames })
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token expired');
+      }
+      throw new Error('Failed to get presigned URL');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error getting presigned URL:', error);
+    throw error;
   }
-
-  if (!response.ok) {
-    throw new Error('Failed to get presigned URLs');
-  }
-
-  const data = await response.json();
-  console.log('Presigned URL response:', data);
-  return data;
-}
+};
 
 export async function requestPresignedUrl(accessToken: string, filename: string): Promise<string> {
   const response = await fetch('/api/presigned_url', {

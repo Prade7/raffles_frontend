@@ -5,41 +5,109 @@ export * from './resume';
 export * from './presignedUrl';
 export * from './filters';
 
-export async function getResumes(
-  accessToken: string, 
-  filters?: FilterParams,
-  page: number = 1,
-  limit: number = 20
-): Promise<ResumeListResponse> {
-  console.log('Fetching resumes with filters:', filters);
-  console.log('Page:', page, 'Limit:', limit);
+const API_URL = 'https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws';
+const PARSE_API_URL = 'https://tf7hw5m2253i2atsm2q3mke5em0jmxfh.lambda-url.ap-south-1.on.aws';
 
-  const offset = (page - 1) * limit;
-  const requestBody = {
-    ...filters,
-    limit,
-    offset
-  };
+// Helper function to get the correct API URL
+const getApiUrl = (endpoint: string, isParseApi: boolean = false) => {
+  const baseUrl = isParseApi ? PARSE_API_URL : API_URL;
+  return `${baseUrl}${endpoint}`;
+};
 
-  const response = await fetch('/api/list_data', {
-    method: 'POST',
-    headers: {
-      'access': accessToken,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(requestBody)
-  });
+export const getResumes = async (accessToken: string, filters?: FilterParams, page: number = 1, limit: number = 10): Promise<ResumeListResponse> => {
+  try {
+    console.log('Making API call to:', `${API_URL}/list_data`);
+    console.log('With filters:', filters);
+    console.log('Page:', page, 'Limit:', limit);
 
-  const data = await response.json();
-  console.log('Raw API response:', data);
+    const response = await fetch(`${API_URL}/list_data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        ...filters,
+        page,
+        limit
+      })
+    });
 
-  if (response.status === 400) {
-    throw new Error('token_expired');
+    console.log('API Response status:', response.status);
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token expired');
+      }
+      throw new Error('Failed to fetch resumes');
+    }
+
+    const data = await response.json();
+    console.log('API Response data:', data);
+
+    if (!data.resume_data || !Array.isArray(data.resume_data)) {
+      throw new Error('Invalid response format');
+    }
+
+    return {
+      resume_data: data.resume_data,
+      total_count: data.total_count || data.resume_data.length
+    };
+  } catch (error) {
+    console.error('Error fetching resumes:', error);
+    throw error;
   }
+};
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch resumes');
+export const loginUser = async (domainId: string, password: string) => {
+  try {
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ domain_id: domainId, password })
+    });
+
+    if (!response.ok) {
+      throw new Error('Login failed');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
   }
+};
 
-  return data;
-}
+export const logoutUser = async () => {
+  // Clear local storage
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('userRole');
+};
+
+export const uploadResume = async (files: File[], accessToken: string) => {
+  try {
+    const response = await fetch(`${API_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: files[0] // Send the first file for now
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token expired');
+      }
+      throw new Error('Failed to upload resume');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error uploading resume:', error);
+    throw error;
+  }
+};

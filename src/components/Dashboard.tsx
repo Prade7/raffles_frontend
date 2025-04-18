@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { FileUp as FileUpload, Table as TableIcon, LogOut, Search, Filter, X, CheckCircle, AlertCircle } from 'lucide-react';
 import ResumeTable from './ResumeTable';
 import { useAuth } from '../context/AuthContext';
-import { uploadResume, getResumes, logoutUser } from '../utils/api';
+import { getResumes, loginUser, logoutUser, uploadResume } from '../utils/api';
 import { getFilterValues } from '../utils/filters';
-import type { ResumeData, FilterValues, FilterParams } from '../types/index';
+import type { ResumeData, FilterValues, FilterParams } from '../types';
 
 interface Notification {
   type: 'success' | 'error';
@@ -96,19 +96,27 @@ function Dashboard() {
         ITEMS_PER_PAGE
       );
 
-      console.log('Raw API response:', response);
+      console.log('API Response:', response);
       
-      if (response.resume_data) {
-        console.log('Resumes array length:', response.resume_data.length);
-        console.log('First resume:', response.resume_data[0]);
+      if (response && Array.isArray(response.resume_data)) {
+        setResumeData(response.resume_data);
+        setTotalCount(response.total_count);
+        setTotalPages(Math.ceil(response.total_count / ITEMS_PER_PAGE));
+      } else {
+        console.error('Invalid response format:', response);
+        setError('Failed to load resumes: Invalid response format');
       }
-
-      setResumeData(response.resume_data || []);
-      setTotalCount(response.total_count || 0);
-      setTotalPages(Math.ceil((response.total_count || 0) / ITEMS_PER_PAGE));
     } catch (err) {
       console.error('Error loading resumes:', err);
-      setError('Failed to load resumes');
+      if (err instanceof Error) {
+        if (err.message === 'Token expired') {
+          handleTokenExpired();
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to load resumes');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -144,8 +152,10 @@ function Dashboard() {
       setIsUploading(true);
       setError(null);
 
-      // Upload the files
-      await uploadResume(selectedFiles, accessToken);
+      // Upload each file individually
+      for (const file of selectedFiles) {
+        await uploadResume([file], accessToken);
+      }
       
       // Clear the selected files and reset the file input
       setSelectedFiles([]);
@@ -157,16 +167,10 @@ function Dashboard() {
       // Show success notification
       showNotification('success', `Successfully uploaded ${selectedFiles.length} file(s)`);
       
-      // Call list_data and filter in the background
-      Promise.all([
-        loadResumes(),
-        loadFilters()
-      ]).catch(err => {
-        console.error('Error loading data after upload:', err);
-        setError('Failed to refresh data after upload');
-      });
+      // Refresh the data
+      await loadResumes();
     } catch (err) {
-      if (err instanceof Error && err.message === 'token_expired') {
+      if (err instanceof Error && err.message === 'Token expired') {
         handleTokenExpired();
       } else {
         setError('Failed to upload resumes');

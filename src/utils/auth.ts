@@ -1,4 +1,6 @@
-import type { LoginResponse } from '../types/index';
+// import type { LoginResponse } from '../types';
+
+const API_URL = import.meta.env.VITE_MAIN_API_URL;
 
 /**
  * Authenticates user with domain ID and password
@@ -6,33 +8,27 @@ import type { LoginResponse } from '../types/index';
  * @param password - User's password
  * @returns LoginResponse containing access token and user role
  */
-export async function loginUser(domainId: string, password: string): Promise<LoginResponse> {
-  console.log('Attempting login for domain ID:', domainId);
-  
-  const response = await fetch('/api/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ domain_id: domainId, password })
-  });
+export const login = async (username: string, password: string): Promise<any> => {
+  try {
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password })
+    });
 
-  const data = await response.json();
-  console.log('Login response status:', response.status);
+    if (!response.ok) {
+      throw new Error('Login failed');
+    }
 
-  if (response.status === 401) {
-    console.error('Authentication failed:', data.message);
-    throw new Error(data.message || 'Invalid credentials');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
   }
-
-  if (!response.ok) {
-    console.error('Login failed:', data.message);
-    throw new Error(data.message || 'Login failed');
-  }
-
-  console.log('Login successful');
-  return data;
-}
+};
 
 /**
  * Logs out the user by clearing session data
