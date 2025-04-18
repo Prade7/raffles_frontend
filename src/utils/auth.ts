@@ -12,12 +12,9 @@ export async function loginUser(domainId: string, password: string): Promise<Log
   const response = await fetch('/api/login', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      domain_id: domainId,
-      password: password
-    }),
+    body: JSON.stringify({ domain_id: domainId, password })
   });
 
   const data = await response.json();

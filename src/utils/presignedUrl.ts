@@ -31,3 +31,22 @@ export async function getPresignedUrl(filenames: string[], accessToken: string):
   console.log('Presigned URL response:', data);
   return data;
 }
+
+export async function requestPresignedUrl(accessToken: string, filename: string): Promise<string> {
+  const response = await fetch('/api/presigned_url', {
+    method: 'POST',
+    headers: {
+      'access': accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ filename })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to get presigned URL');
+  }
+
+  return data.url;
+}

@@ -12,19 +12,15 @@ export default defineConfig({
       '/api': {
         target: 'https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
-          });
-        },
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
+      '/parse': {
+        target: 'https://tf7hw5m2253i2atsm2q3mke5em0jmxfh.lambda-url.ap-south-1.on.aws',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/parse/, '')
+      }
     },
   },
 });

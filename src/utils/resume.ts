@@ -1,4 +1,4 @@
-import type { ResumeData, ParsedResume, FilterParams } from '../types';
+import type { ResumeData, ParsedResume, FilterParams } from '../types/index';
 import { getPresignedUrl } from './presignedUrl';
 
 export async function uploadResume(files: File[], accessToken: string): Promise<ParsedResume[]> {
@@ -84,12 +84,9 @@ export async function uploadResume(files: File[], accessToken: string): Promise<
       method: 'POST',
       headers: {
         'access': accessToken,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        limit: 20,
-        offset: 0
-      })
+      body: JSON.stringify({})
     });
 
     if (!listResponse.ok) {
@@ -120,9 +117,9 @@ export async function getResumes(accessToken: string, filters?: FilterParams): P
     method: 'POST',
     headers: {
       'access': accessToken,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(filters || {}),
+    body: JSON.stringify({})
   });
 
   const data = await response.json();
@@ -170,12 +167,12 @@ export async function updateProfile(
     method: 'POST',
     headers: {
       'access': accessToken,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       profile_id: originalData.profile_id,
       ...changedFields
-    }),
+    })
   });
 
   const responseData = await response.json();

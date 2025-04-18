@@ -25,9 +25,9 @@ export async function getResumes(
     method: 'POST',
     headers: {
       'access': accessToken,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(requestBody),
+    body: JSON.stringify(requestBody)
   });
 
   const data = await response.json();
