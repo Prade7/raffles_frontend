@@ -1,6 +1,6 @@
 import type { FilterValues } from '../types';
 
-const API_URL = 'https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws';
+const API_URL = 'https://imfu5lsjndb67dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws';
 
 /**
  * Fetches available filter values from the API
@@ -12,7 +12,7 @@ export const getFilterValues = async (accessToken: string): Promise<FilterValues
     const response = await fetch(`${API_URL}/filter`, {
       method: 'GET',
       headers: {
-        'Authorization': accessToken
+        'access': accessToken
       }
     });
 

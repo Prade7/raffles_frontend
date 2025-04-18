@@ -11,8 +11,8 @@ export const getPresignedUrl = async (filenames: string[], accessToken: string):
     const response = await fetch(`${API_URL}/presigned-url`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': accessToken
+        'access': accessToken,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ filenames })
     });

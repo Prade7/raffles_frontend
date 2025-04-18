@@ -9,7 +9,7 @@ export const uploadResume = async (file: File, accessToken: string): Promise<Res
     const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': accessToken
+        'access': accessToken
       },
       body: file
     });
@@ -34,7 +34,7 @@ export const parseResume = async (file: File, accessToken: string): Promise<Resu
     const response = await fetch(`${PARSE_API_URL}/parse`, {
       method: 'POST',
       headers: {
-        'Authorization': accessToken
+        'access': accessToken
       },
       body: file
     });
@@ -107,7 +107,7 @@ export async function updateProfile(
 ): Promise<UpdateProfileResponse> {
   console.log('Updating profile with changed fields:', changedFields);
 
-  const response = await fetch('/api/update_profile', {
+  const response = await fetch(`${API_URL}/update_profile`, {
     method: 'POST',
     headers: {
       'access': accessToken,
