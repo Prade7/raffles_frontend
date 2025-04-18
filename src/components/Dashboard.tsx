@@ -145,35 +145,24 @@ function Dashboard() {
     setError(null);
   };
 
-  const handleFileUpload = async () => {
-    if (!accessToken || selectedFiles.length === 0) return;
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
 
     try {
       setIsUploading(true);
-      setError(null);
-
-      // Upload all files at once
-      await uploadResume(selectedFiles, accessToken);
+      const fileArray = Array.from(files);
+      const results = await uploadResume(fileArray, accessToken);
       
-      // Clear the selected files and reset the file input
-      setSelectedFiles([]);
-      const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = '';
+      if (results && results.length > 0) {
+        setResumeData(prevResumes => [...prevResumes, ...results]);
+        setNotification({ type: 'success', message: `Successfully uploaded ${results.length} file(s)` });
+        setTimeout(() => setNotification(null), 5000);
+        await loadResumes();
       }
-
-      // Show success notification
-      showNotification('success', `Successfully uploaded ${selectedFiles.length} file(s)`);
-      
-      // Refresh the data
-      await loadResumes();
-    } catch (err) {
-      if (err instanceof Error && err.message === 'Token expired') {
-        handleTokenExpired();
-      } else {
-        setError('Failed to upload resumes');
-        console.error(err);
-      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      setError('Failed to upload files. Please try again.');
+      setTimeout(() => setError(''), 3000);
     } finally {
       setIsUploading(false);
     }
@@ -263,7 +252,10 @@ function Dashboard() {
             <h2 className="text-lg font-semibold text-gray-800">Upload Resumes</h2>
             {selectedFiles.length > 0 && (
               <button
-                onClick={handleFileUpload}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleFileUpload(e.currentTarget.files);
+                }}
                 disabled={isUploading}
                 className={`px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center space-x-2 transform hover:scale-105 ${
                   isUploading ? 'opacity-50 cursor-not-allowed' : ''
