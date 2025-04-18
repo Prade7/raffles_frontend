@@ -92,7 +92,7 @@ export const uploadResume = async (files: File[], accessToken: string) => {
     const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': accessToken
+        'access': accessToken
       },
       body: files[0]
     });
