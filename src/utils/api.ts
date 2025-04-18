@@ -89,7 +89,7 @@ export const logoutUser = async () => {
 
 export const uploadResume = async (files: File[], accessToken: string) => {
   try {
-    const response = await fetch(`${API_URL}/upload`, {
+    const response = await fetch(`${API_URL}/presigned_url`, {
       method: 'POST',
       headers: {
         'access': accessToken

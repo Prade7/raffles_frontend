@@ -4,7 +4,7 @@ interface PresignedUrlResponse {
   url: string;
 }
 
-const API_URL = "https://imfu5lsjndb67dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws";
+const API_URL = import.meta.env.VITE_MAIN_API_URL;
 
 export const getPresignedUrl = async (filenames: string[], accessToken: string): Promise<PresignedUrlResponse[]> => {
   try {

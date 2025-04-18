@@ -1,6 +1,6 @@
-import type { FilterValues } from '../types';
+import type { FilterValues } from '../types/index';
 
-const API_URL = 'https://imfu5lsjndb67dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws';
+const API_URL = 'https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws';
 
 /**
  * Fetches available filter values from the API
@@ -9,12 +9,13 @@ const API_URL = 'https://imfu5lsjndb67dohb67aaconwy0zimhy.lambda-url.ap-south-1.
  */
 export const getFilterValues = async (accessToken: string): Promise<FilterValues> => {
   try {
-    const response = await fetch(`${API_URL}/filter`, {
+    const response = await fetch(`${API_URL}/filters`, {
       method: 'POST',
       headers: {
         'access': accessToken,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({ access_token: accessToken })
     });
 
     if (!response.ok) {

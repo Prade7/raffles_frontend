@@ -1,7 +1,7 @@
 import type { ResumeData, ParsedResume, FilterParams } from '../types/index';
 import { getPresignedUrl } from './presignedUrl';
 
-const API_URL = "https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws";
+const API_URL = "https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws/";
 const PARSE_API_URL = "https://tf7hw5m2253i2atsm2q3mke5em0jmxfh.lambda-url.ap-south-1.on.aws";
 
 export const uploadResume = async (files: File[], accessToken: string): Promise<ResumeData[]> => {
