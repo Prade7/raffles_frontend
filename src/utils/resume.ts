@@ -1,30 +1,65 @@
 import type { ResumeData, ParsedResume, FilterParams } from '../types/index';
 import { getPresignedUrl } from './presignedUrl';
 
-const API_URL = "https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws";
+const API_URL = "https://imfu5lsjndb67dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws";
 const PARSE_API_URL = "https://tf7hw5m2253i2atsm2q3mke5em0jmxfh.lambda-url.ap-south-1.on.aws";
 
-export const uploadResume = async (file: File, accessToken: string): Promise<ResumeData> => {
+export const uploadResume = async (files: File[], accessToken: string): Promise<ResumeData[]> => {
   try {
-    const response = await fetch(`${API_URL}/upload`, {
-      method: 'POST',
-      headers: {
-        'access': accessToken
-      },
-      body: file
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token expired');
-      }
-      throw new Error('Failed to upload resume');
+    // Get presigned URLs for all files at once
+    const filenames = files.map(file => file.name);
+    const presignedUrls = await getPresignedUrl(filenames, accessToken);
+    
+    if (!presignedUrls || presignedUrls.length === 0) {
+      throw new Error('Failed to get presigned URLs');
     }
 
-    const data = await response.json();
-    return data;
+    const results: ResumeData[] = [];
+
+    // Upload each file using its corresponding presigned URL
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const presignedUrl = presignedUrls[i];
+
+      // Upload file to S3 using presigned URL
+      const uploadResponse = await fetch(presignedUrl.url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type
+        },
+        body: file
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to S3');
+      }
+
+      // Parse the uploaded file
+      const parseResponse = await fetch(`${PARSE_API_URL}/parse`, {
+        method: 'POST',
+        headers: {
+          'access': accessToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          file_name: presignedUrl.file_name
+        })
+      });
+
+      if (!parseResponse.ok) {
+        if (parseResponse.status === 401) {
+          throw new Error('Token expired');
+        }
+        throw new Error('Failed to parse resume');
+      }
+
+      const data = await parseResponse.json();
+      results.push(data);
+    }
+
+    return results;
   } catch (error) {
-    console.error('Error uploading resume:', error);
+    console.error('Error uploading resumes:', error);
     throw error;
   }
 };

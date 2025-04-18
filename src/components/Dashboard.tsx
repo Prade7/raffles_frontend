@@ -152,10 +152,8 @@ function Dashboard() {
       setIsUploading(true);
       setError(null);
 
-      // Upload each file individually
-      for (const file of selectedFiles) {
-        await uploadResume([file], accessToken);
-      }
+      // Upload all files at once
+      await uploadResume(selectedFiles, accessToken);
       
       // Clear the selected files and reset the file input
       setSelectedFiles([]);
