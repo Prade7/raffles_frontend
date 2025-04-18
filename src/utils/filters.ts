@@ -12,7 +12,8 @@ export const getFilterValues = async (accessToken: string): Promise<FilterValues
     const response = await fetch(`${API_URL}/filter`, {
       method: 'POST',
       headers: {
-        'access': accessToken
+        'access': accessToken,
+        'Content-Type': 'application/json'
       }
     });
 
