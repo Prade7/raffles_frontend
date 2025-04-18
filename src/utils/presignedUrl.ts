@@ -12,7 +12,7 @@ export const getPresignedUrl = async (filenames: string[], accessToken: string):
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': accessToken
       },
       body: JSON.stringify({ filenames })
     });

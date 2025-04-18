@@ -24,7 +24,7 @@ export const getResumes = async (accessToken: string, filters?: FilterParams, pa
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': accessToken
       },
       body: JSON.stringify({
         ...filters,
@@ -92,9 +92,9 @@ export const uploadResume = async (files: File[], accessToken: string) => {
     const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': accessToken
       },
-      body: files[0] // Send the first file for now
+      body: files[0]
     });
 
     if (!response.ok) {

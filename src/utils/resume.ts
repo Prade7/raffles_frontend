@@ -9,7 +9,7 @@ export const uploadResume = async (file: File, accessToken: string): Promise<Res
     const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': accessToken
       },
       body: file
     });
@@ -34,7 +34,7 @@ export const parseResume = async (file: File, accessToken: string): Promise<Resu
     const response = await fetch(`${PARSE_API_URL}/parse`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': accessToken
       },
       body: file
     });
