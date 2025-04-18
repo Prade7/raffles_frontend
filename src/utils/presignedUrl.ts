@@ -4,11 +4,11 @@ interface PresignedUrlResponse {
   url: string;
 }
 
-const API_URL = import.meta.env.VITE_MAIN_API_URL;
+const API_URL = "https://imfu5lsjndb67dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws";
 
 export const getPresignedUrl = async (filenames: string[], accessToken: string): Promise<PresignedUrlResponse[]> => {
   try {
-    const response = await fetch(`${API_URL}/presigned-url`, {
+    const response = await fetch(`${API_URL}/presigned_url`, {
       method: 'POST',
       headers: {
         'access': accessToken,

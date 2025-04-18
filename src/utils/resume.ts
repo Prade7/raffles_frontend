@@ -6,23 +6,23 @@ const PARSE_API_URL = "https://tf7hw5m2253i2atsm2q3mke5em0jmxfh.lambda-url.ap-so
 
 export const uploadResume = async (files: File[], accessToken: string): Promise<ResumeData[]> => {
   try {
-    // Get presigned URLs for all files at once
+    // Get presigned URLs for all files
     const filenames = files.map(file => file.name);
-    const presignedUrls = await getPresignedUrl(filenames, accessToken);
+    const presignedUrlResponses = await getPresignedUrl(filenames, accessToken);
     
-    if (!presignedUrls || presignedUrls.length === 0) {
+    if (!presignedUrlResponses || presignedUrlResponses.length === 0) {
       throw new Error('Failed to get presigned URLs');
     }
 
     const results: ResumeData[] = [];
 
-    // Upload each file using its corresponding presigned URL
+    // Upload each file using its presigned URL
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const presignedUrl = presignedUrls[i];
+      const presignedUrlResponse = presignedUrlResponses[i];
 
-      // Upload file to S3 using presigned URL
-      const uploadResponse = await fetch(presignedUrl.url, {
+      // Upload file to S3 using the presigned URL
+      const uploadResponse = await fetch(presignedUrlResponse.url, {
         method: 'PUT',
         headers: {
           'Content-Type': file.type
@@ -42,7 +42,7 @@ export const uploadResume = async (files: File[], accessToken: string): Promise<
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          file_name: presignedUrl.file_name
+          file_name: presignedUrlResponse.file_name
         })
       });
 
