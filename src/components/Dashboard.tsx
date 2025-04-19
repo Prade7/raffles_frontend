@@ -27,6 +27,7 @@ function Dashboard() {
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: string }>({});
   const [notification, setNotification] = useState<Notification | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [offset, setOffset] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -78,26 +79,17 @@ function Dashboard() {
 
   const loadResumes = async () => {
     try {
-      if (!accessToken) return;
-      setIsLoading(true);
-      setError(null);
-
-      console.log('Loading resumes for page:', currentPage);
+      console.log('Loading resumes with offset:', offset);
       console.log('Current filters:', filters);
       console.log('Search query:', searchQuery);
 
       const response = await getResumes(
         accessToken,
-        {
-          ...filters,
-          ...(searchQuery ? { search: searchQuery } : {})
-        },
-        currentPage,
+        { ...filters, ...(searchQuery ? { search: searchQuery } : {}) },
+        offset,
         ITEMS_PER_PAGE
       );
 
-      console.log('API Response:', response);
-      
       if (response && Array.isArray(response.resume_data)) {
         setResumeData(response.resume_data);
         setTotalCount(response.total_count);
@@ -190,16 +182,51 @@ function Dashboard() {
     }));
   };
 
-  const clearFilters = () => {
+  const clearFilters = async () => {
+    // Clear all filters and search
     setFilters({});
     setSearchQuery('');
-    loadResumes();
+    setCurrentPage(1);
+    setOffset(0);
+    
+    // Call getResumes with empty filters directly
+    try {
+      const response = await getResumes(
+        accessToken,
+        {}, // Empty filters
+        0,  // Reset offset
+        ITEMS_PER_PAGE
+      );
+      
+      if (response && Array.isArray(response.resume_data)) {
+        setResumeData(response.resume_data);
+        setTotalCount(response.total_count);
+        setTotalPages(Math.ceil(response.total_count / ITEMS_PER_PAGE));
+      } else {
+        console.error('Invalid response format:', response);
+        setError('Failed to load resumes: Invalid response format');
+      }
+    } catch (err) {
+      console.error('Error loading resumes:', err);
+      if (err instanceof Error) {
+        if (err.message === 'Token expired') {
+          handleTokenExpired();
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to load resumes');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Searching with query:', searchQuery);
     setCurrentPage(1);
+    setOffset(0);
     loadResumes();
   };
 
@@ -214,26 +241,39 @@ function Dashboard() {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const handlePageChange = (newPage: number) => {
-    console.log('Changing to page:', newPage, 'Total pages:', totalPages);
-    if (newPage < 1 || newPage > totalPages) {
-      console.log('Invalid page number');
-      return;
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      const newOffset = offset + ITEMS_PER_PAGE;
+      console.log('Next page clicked, increasing offset to:', newOffset);
+      setOffset(newOffset);
+      setCurrentPage(currentPage + 1);
+      loadResumes();
     }
-    setCurrentPage(newPage);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      const newOffset = Math.max(0, offset - ITEMS_PER_PAGE);
+      console.log('Previous page clicked, decreasing offset to:', newOffset);
+      setOffset(newOffset);
+      setCurrentPage(currentPage - 1);
+      loadResumes();
+    }
   };
 
   const handleApplyFilters = async () => {
     if (!hasActiveFilters) return;
     console.log('Applying filters:', filters);
     setCurrentPage(1);
+    setOffset(0);
     await loadResumes();
   };
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-end mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-0">Dashboard</h1>
           <button
             onClick={handleLogout}
             className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
@@ -259,8 +299,8 @@ function Dashboard() {
         )}
 
         <div className="bg-white rounded-xl shadow-md p-4 transform transition-all duration-300 hover:shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Upload Resumes</h2>
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Upload Resumes</h2>
             {selectedFiles.length > 0 && (
               <button
                 onClick={handleFileUpload}
@@ -356,106 +396,122 @@ function Dashboard() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md p-6">
-          <div className="flex flex-col space-y-4 mb-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-800">Parsed Resumes</h2>
-              <div className="flex items-center space-x-4">
-                <form onSubmit={handleSearch} className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search by name or phone number..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={handleSearchKeyPress}
-                    className="w-64 pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                  />
-                  <button
-                    type="submit"
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors"
-                  >
-                    <Search className="w-4 h-4" />
-                  </button>
-                </form>
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
+            <h2 className="text-xl sm:text-3xl font-bold text-gray-800">Parsed Resumes</h2>
+            <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-2 sm:mt-0">
+              <form onSubmit={handleSearch} className="relative w-full sm:w-auto">
+                <input
+                  type="text"
+                  placeholder="Search by name or phone..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleSearchKeyPress}
+                  className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                />
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                  type="submit"
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors"
                 >
-                  <Filter className="w-4 h-4" />
-                  <span>Filters</span>
+                  <Search className="w-4 h-4" />
                 </button>
-                <TableIcon className="w-5 h-5 text-gray-400" />
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap gap-4">
-              {showFilters && filterValues && (
-                <div className="w-full bg-gray-50 p-4 rounded-lg space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-700">Filter Options</h3>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={clearFilters}
-                        disabled={!hasActiveFilters}
-                        className={`text-sm text-gray-600 hover:text-gray-800 ${
-                          !hasActiveFilters ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        Clear filters
-                      </button>
-                      <button
-                        onClick={handleApplyFilters}
-                        disabled={!hasActiveFilters || isLoading}
-                        className={`px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-all flex items-center space-x-2 ${
-                          !hasActiveFilters || isLoading ? 'opacity-75 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        {isLoading ? (
-                          <>
-                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Applying...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Apply Filters</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {Object.entries(filterValues).map(([key, values]) => (
-                      <div key={key}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')}
-                        </label>
-                        <select
-                          value={filters[key as keyof FilterParams] || ''}
-                          onChange={(e) => handleFilterChange(key as keyof FilterParams, e.target.value || undefined)}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                          <option value="">All {key.replace('_', ' ')}</option>
-                          {values.filter(Boolean).map((value: string) => (
-                            <option key={value} value={value}>{value}</option>
-                          ))}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              </form>
+              <button
+                onClick={() => {
+                  console.log('Filter button clicked');
+                  setShowFilters(!showFilters);
+                }}
+                className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm w-full sm:w-auto z-10"
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filters</span>
+              </button>
+              <TableIcon className="w-5 h-5 text-gray-400" />
             </div>
           </div>
           
-          <ResumeTable data={resumeData} setData={setResumeData} />
+          <div className="flex flex-wrap gap-4">
+            {showFilters && filterValues && (
+              <div className="hidden sm:block w-full bg-gray-50 p-4 rounded-lg space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-700">Filter Options</h3>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={clearFilters}
+                      disabled={!hasActiveFilters}
+                      className={`text-sm text-gray-600 hover:text-gray-800 ${
+                        !hasActiveFilters ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      Clear filters
+                    </button>
+                    <button
+                      onClick={handleApplyFilters}
+                      disabled={!hasActiveFilters || isLoading}
+                      className={`px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-all flex items-center space-x-2 ${
+                        !hasActiveFilters || isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {isLoading ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Applying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Apply Filters</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {Object.entries(filterValues).map(([key, values]) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')}
+                      </label>
+                      <select
+                        value={filters[key as keyof FilterParams] || ''}
+                        onChange={(e) => handleFilterChange(key as keyof FilterParams, e.target.value || undefined)}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      >
+                        <option value="">All {key.replace('_', ' ')}</option>
+                        {values.filter(Boolean).map((value: string) => (
+                          <option key={value} value={value}>{value}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Total Count Header */}
+        <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
+          <div className="text-gray-700">
+            <span className="font-semibold">Total Resumes:</span> {totalCount}
+          </div>
+          {isLoading && (
+            <div className="flex items-center text-gray-600">
+              <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Loading...</span>
+            </div>
+          )}
+        </div>
+
+        <ResumeTable data={resumeData} setData={setResumeData} />
 
         <div className="flex justify-center items-center space-x-2 mt-4">
           <button
-            onClick={() => handlePageChange(currentPage - 1)}
+            onClick={handlePreviousPage}
             disabled={currentPage === 1}
             className="px-3 py-1 border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >
@@ -465,7 +521,7 @@ function Dashboard() {
             Page {currentPage} of {totalPages}
           </span>
           <button
-            onClick={() => handlePageChange(currentPage + 1)}
+            onClick={handleNextPage}
             disabled={currentPage === totalPages}
             className="px-3 py-1 border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
           >

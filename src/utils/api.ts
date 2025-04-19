@@ -14,11 +14,21 @@ const getApiUrl = (endpoint: string, isParseApi: boolean = false) => {
   return `${baseUrl}${endpoint}`;
 };
 
-export const getResumes = async (accessToken: string, filters?: FilterParams, page: number = 1, limit: number = 10): Promise<ResumeListResponse> => {
+export const getResumes = async (
+  accessToken: string,
+  filters?: FilterParams,
+  offset: number = 0,
+  limit: number = 20
+): Promise<{
+  resume_data: ResumeData[];
+  total_count: number;
+  next_offset: number | null;
+  has_more: boolean;
+}> => {
   try {
     console.log('Making API call to:', `${API_URL}/list_data`);
     console.log('With filters:', filters);
-    console.log('Page:', page, 'Limit:', limit);
+    console.log('Offset:', offset, 'Limit:', limit);
 
     const response = await fetch(`${API_URL}/list_data`, {
       method: 'POST',
@@ -28,30 +38,31 @@ export const getResumes = async (accessToken: string, filters?: FilterParams, pa
       },
       body: JSON.stringify({
         ...filters,
-        page,
+        offset,
         limit
       })
     });
 
-    console.log('API Response status:', response.status);
-
     if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('Token expired');
-      }
+      if (response.status === 401) throw new Error('Token expired');
       throw new Error('Failed to fetch resumes');
     }
 
     const data = await response.json();
-    console.log('API Response data:', data);
 
     if (!data.resume_data || !Array.isArray(data.resume_data)) {
       throw new Error('Invalid response format');
     }
 
+    const totalCount = data.total_count || data.resume_data.length;
+    const hasMore = offset + limit < totalCount;
+    const nextOffset = hasMore ? offset + limit : null;
+
     return {
       resume_data: data.resume_data,
-      total_count: data.total_count || data.resume_data.length
+      total_count: totalCount,
+      next_offset: nextOffset,
+      has_more: hasMore
     };
   } catch (error) {
     console.error('Error fetching resumes:', error);

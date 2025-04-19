@@ -15,6 +15,13 @@ interface Notification {
 }
 
 function ResumeTable({ data, setData }: ResumeTableProps) {
+  // Console logs to debug the data being received
+  console.log('ResumeTable data:', data);
+  console.log('Data length:', data?.length);
+  if (data?.length > 0) {
+    console.log('First item:', data[0]);
+  }
+  
   const { accessToken } = useAuth();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<ResumeData | null>(null);
@@ -119,7 +126,7 @@ function ResumeTable({ data, setData }: ResumeTableProps) {
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="rounded-lg border border-gray-200 shadow-sm">
       {notification && (
         <div className={`mb-4 p-3 rounded-lg text-sm flex items-center space-x-2 ${
           notification.type === 'success' 
@@ -140,24 +147,24 @@ function ResumeTable({ data, setData }: ResumeTableProps) {
         </div>
       )}
       <table className="min-w-full divide-y divide-gray-200">
-        <thead>
+        <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-1 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Name
             </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-1 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Contact
             </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-1 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Experience
             </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-1 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Location
             </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Sector/Sub-sector
+            <th className="px-1 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Sector
             </th>
-            <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-1 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
             </th>
           </tr>
@@ -165,10 +172,10 @@ function ResumeTable({ data, setData }: ResumeTableProps) {
         <tbody className="bg-white divide-y divide-gray-200">
           {data.map(item => (
             <React.Fragment key={item.profile_id}>
-              <tr className="hover:bg-gray-50 transition-colors">
+              <tr className={`hover:bg-gray-50 transition-colors border-collapse ${expandedRow === item.profile_id ? 'bg-gray-50' : ''}`}>
                 {editingId === item.profile_id ? (
                   <>
-                    <td className="px-6 py-4">
+                    <td className="px-1 py-4">
                       <input
                         type="text"
                         value={editData?.name}
@@ -176,147 +183,137 @@ function ResumeTable({ data, setData }: ResumeTableProps) {
                         className="w-full px-2 py-1 border rounded"
                       />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-2">
-                        <input
-                          type="tel"
-                          value={editData?.mobile_no}
-                          onChange={e => setEditData(prev => prev ? { ...prev, mobile_no: e.target.value } : null)}
-                          className="w-full px-2 py-1 border rounded"
-                        />
+                    <td className="px-1 py-4">
+                      <div className="flex flex-col space-y-2">
                         <input
                           type="email"
                           value={editData?.email}
                           onChange={e => setEditData(prev => prev ? { ...prev, email: e.target.value } : null)}
                           className="w-full px-2 py-1 border rounded"
+                          placeholder="Email"
+                        />
+                        <input
+                          type="text"
+                          value={editData?.mobile_no}
+                          onChange={e => setEditData(prev => prev ? { ...prev, mobile_no: e.target.value } : null)}
+                          className="w-full px-2 py-1 border rounded"
+                          placeholder="Mobile"
                         />
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-1 py-4">
                       <input
                         type="text"
                         value={editData?.experience}
                         onChange={e => setEditData(prev => prev ? { ...prev, experience: e.target.value } : null)}
-                        className="w-32 px-2 py-1 border rounded"
+                        className="w-full px-2 py-1 border rounded"
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-1 py-4">
                       <input
                         type="text"
                         value={editData?.location}
                         onChange={e => setEditData(prev => prev ? { ...prev, location: e.target.value } : null)}
-                        className="w-32 px-2 py-1 border rounded"
+                        className="w-full px-2 py-1 border rounded"
                       />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-2">
+                    <td className="px-1 py-4">
+                      <div className="flex flex-col space-y-2">
                         <input
                           type="text"
                           value={editData?.sector}
                           onChange={e => setEditData(prev => prev ? { ...prev, sector: e.target.value } : null)}
-                          className="w-32 px-2 py-1 border rounded"
+                          className="w-full px-2 py-1 border rounded"
                           placeholder="Sector"
                         />
                         <input
                           type="text"
                           value={editData?.subsector}
                           onChange={e => setEditData(prev => prev ? { ...prev, subsector: e.target.value } : null)}
-                          className="w-32 px-2 py-1 border rounded"
-                          placeholder="Sub-sector"
+                          className="w-full px-2 py-1 border rounded"
+                          placeholder="Subsector"
                         />
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={handleSave}
-                          disabled={isUpdating}
-                          className={`text-green-600 hover:text-green-800 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          {isUpdating ? (
-                            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          ) : (
-                            <Save className="w-5 h-5" />
-                          )}
-                        </button>
-                        <button
-                          onClick={handleCancel}
-                          disabled={isUpdating}
-                          className={`text-red-600 hover:text-red-800 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
+                    <td className="px-1 py-4 text-right space-x-1">
+                      <button
+                        onClick={handleSave}
+                        disabled={isUpdating}
+                        className={`text-blue-600 hover:text-blue-900 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {isUpdating ? (
+                          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <Save size={18} />
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancel}
+                        disabled={isUpdating}
+                        className={`text-red-600 hover:text-red-900 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <X size={18} />
+                      </button>
                     </td>
                   </>
                 ) : (
                   <>
                     <td 
-                      className="px-6 py-4 flex items-center space-x-2 cursor-pointer"
+                      className="px-1 py-4 flex items-center space-x-1 cursor-pointer"
                       onClick={() => handleRowClick(item.profile_id)}
                     >
                       {expandedRow === item.profile_id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       <span>{item.name}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="text-sm text-gray-600">{item.mobile_no}</div>
-                        <div className="text-sm text-gray-600">{item.email}</div>
-                      </div>
+                    <td className="px-1 py-4">
+                      <div className="text-sm text-gray-900">{item.email}</div>
+                      <div className="text-sm text-gray-500">{item.mobile_no}</div>
                     </td>
-                    <td className="px-6 py-4">{item.experience} years</td>
-                    <td className="px-6 py-4">{item.location}</td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <span className={`px-2 py-1 rounded-full text-sm ${
-                          item.sector === 'IT' ? 'bg-blue-100 text-blue-800' :
-                          item.sector === 'Healthcare' ? 'bg-green-100 text-green-800' :
-                          'bg-purple-100 text-purple-800'
-                        }`}>
-                          {item.sector}
-                        </span>
-                        <div className="text-sm text-gray-600">{item.subsector}</div>
-                      </div>
+                    <td className="px-1 py-4">
+                      <div className="text-sm text-gray-900">{item.experience}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleViewCV(item.cloudfront)}
-                          className="text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>View</span>
-                        </button>
-                        <button
-                          onClick={() => handleDownload(item.cloudfront, item.name)}
-                          className="text-indigo-600 hover:text-indigo-800 flex items-center space-x-1"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span>Download</span>
-                        </button>
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="text-indigo-600 hover:text-indigo-800"
-                        >
-                          <Edit2 className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.profile_id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
+                    <td className="px-1 py-4">
+                      <div className="text-sm text-gray-900">{item.location}</div>
+                    </td>
+                    <td className="px-1 py-4">
+                      <div className="text-sm text-gray-900">{item.sector}</div>
+                      <div className="text-sm text-gray-500">{item.subsector}</div>
+                    </td>
+                    <td className="px-2 py-3 text-right whitespace-nowrap space-x-4">
+                      <button
+                        onClick={() => handleViewCV(item.cloudfront)}
+                        className="text-blue-600 hover:text-blue-900 mx-1"
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDownload(item.cloudfront, item.name)}
+                        className="text-green-600 hover:text-green-900 mx-1"
+                      >
+                        <Download size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="text-indigo-600 hover:text-indigo-900 mx-1"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.profile_id)}
+                        className="text-red-600 hover:text-red-900 mx-1"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </td>
                   </>
                 )}
               </tr>
               {expandedRow === item.profile_id && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 bg-gray-50">
+                  <td colSpan={7} className="px-6 py-4 bg-gray-50">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <h3 className="font-semibold text-gray-900 mb-2">Salary Information</h3>
@@ -365,6 +362,15 @@ function ResumeTable({ data, setData }: ResumeTableProps) {
               )}
             </React.Fragment>
           ))}
+          {data.length === 0 && (
+            <tr>
+              <td colSpan={7} className="px-2 py-3">
+                <div className="text-center p-4">
+                  No resumes found. Please adjust your filters or upload new resumes.
+                </div>
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
