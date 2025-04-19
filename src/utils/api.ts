@@ -22,6 +22,7 @@ export const getResumes = async (
 ): Promise<{
   resume_data: ResumeData[];
   total_count: number;
+  filtered_count: number;
   next_offset: number | null;
   has_more: boolean;
 }> => {
@@ -55,12 +56,14 @@ export const getResumes = async (
     }
 
     const totalCount = data.total_count || data.resume_data.length;
-    const hasMore = offset + limit < totalCount;
+    const filteredCount = data.filtered_count || data.resume_data.length;
+    const hasMore = offset + limit < filteredCount;
     const nextOffset = hasMore ? offset + limit : null;
 
     return {
       resume_data: data.resume_data,
       total_count: totalCount,
+      filtered_count: filteredCount,
       next_offset: nextOffset,
       has_more: hasMore
     };

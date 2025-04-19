@@ -10,6 +10,7 @@ export interface LoginResponse {
 export interface ResumeListResponse {
   resume_data: ResumeData[];
   total_count: number;
+  filtered_count: number;
 }
 
 export interface ResumeData {

@@ -30,6 +30,7 @@ function Dashboard() {
   const [offset, setOffset] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [filteredCount, setFilteredCount] = useState(0);
 
   const ITEMS_PER_PAGE = 20;
 
@@ -93,7 +94,8 @@ function Dashboard() {
       if (response && Array.isArray(response.resume_data)) {
         setResumeData(response.resume_data);
         setTotalCount(response.total_count);
-        setTotalPages(Math.ceil(response.total_count / ITEMS_PER_PAGE));
+        setFilteredCount(response.filtered_count);
+        setTotalPages(Math.ceil(response.filtered_count / ITEMS_PER_PAGE));
       } else {
         console.error('Invalid response format:', response);
         setError('Failed to load resumes: Invalid response format');
@@ -201,7 +203,8 @@ function Dashboard() {
       if (response && Array.isArray(response.resume_data)) {
         setResumeData(response.resume_data);
         setTotalCount(response.total_count);
-        setTotalPages(Math.ceil(response.total_count / ITEMS_PER_PAGE));
+        setFilteredCount(response.filtered_count);
+        setTotalPages(Math.ceil(response.filtered_count / ITEMS_PER_PAGE));
       } else {
         console.error('Invalid response format:', response);
         setError('Failed to load resumes: Invalid response format');
@@ -270,13 +273,13 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-0">Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-0 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 animate-gradient">Dashboard</h1>
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hover:shadow-lg transform hover:translate-y-[-2px] transition-all duration-300"
           >
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
@@ -285,8 +288,8 @@ function Dashboard() {
 
         {notification && (
           <div
-            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in ${
-              notification.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-xl flex items-center space-x-2 animate-slide-in ${
+              notification.type === 'success' ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white' : 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
             }`}
           >
             {notification.type === 'success' ? (
@@ -298,20 +301,23 @@ function Dashboard() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-md p-4 transform transition-all duration-300 hover:shadow-lg">
-          <div className="flex flex-col sm:flex-row items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Upload Resumes</h2>
+        <div className="bg-white rounded-xl shadow-lg p-6 transform transition-all duration-300 hover:shadow-xl border border-gray-100">
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 relative">
+              Upload Resumes
+              <span className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+            </h2>
             {selectedFiles.length > 0 && (
               <button
                 onClick={handleFileUpload}
                 disabled={isUploading}
-                className={`px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center space-x-2 transform hover:scale-105 ${
-                  isUploading ? 'opacity-50 cursor-not-allowed' : ''
+                className={`px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center space-x-2 transform hover:scale-105 ${
+                  isUploading ? 'opacity-75 cursor-not-allowed' : ''
                 }`}
               >
                 {isUploading ? (
                   <>
-                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -319,8 +325,8 @@ function Dashboard() {
                   </>
                 ) : (
                   <>
-                    <FileUpload className="w-4 h-4" />
-                    <span>Upload</span>
+                    <FileUpload className="w-5 h-5" />
+                    <span>Upload Files</span>
                   </>
                 )}
               </button>
@@ -338,14 +344,14 @@ function Dashboard() {
               setIsDragging(false);
               handleFileSelect(e.dataTransfer.files);
             }}
-            className={`border-2 border-dashed rounded-lg p-4 text-center transition-all duration-300 ${
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
               isDragging
-                ? 'border-indigo-500 bg-indigo-50 scale-105'
-                : 'border-gray-300 hover:border-indigo-500'
+                ? 'border-indigo-400 bg-indigo-50 scale-[1.02] shadow-md'
+                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
             } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <FileUpload className={`w-8 h-8 text-gray-400 mx-auto mb-2 transition-transform duration-300 ${isDragging ? 'scale-110' : ''}`} />
-            <p className="text-sm text-gray-600 mb-2">
+            <FileUpload className={`w-12 h-12 text-indigo-400 mx-auto mb-4 transition-transform duration-300 ${isDragging ? 'scale-110 animate-bounce' : ''}`} />
+            <p className="text-md text-gray-600 mb-4">
               Drag and drop your resumes here, or click to select files
             </p>
             <input
@@ -359,7 +365,7 @@ function Dashboard() {
             />
             <button
               onClick={() => document.getElementById('fileInput')?.click()}
-              className={`text-sm bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-all transform hover:scale-105 ${
+              className={`text-md bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:translate-y-[-2px] ${
                 isUploading ? 'opacity-50 cursor-not-allowed' : ''
               }`}
               disabled={isUploading}
@@ -369,76 +375,92 @@ function Dashboard() {
           </div>
 
           {selectedFiles.length > 0 && (
-            <div className="mt-4 space-y-2 animate-fade-in">
-              {selectedFiles.map((file, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 group"
-                >
-                  <div className="flex items-center space-x-2 flex-1 min-w-0">
-                    <FileUpload className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-700 truncate">{file.name}</p>
-                      <p className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeFile(index)}
-                    className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-200 opacity-0 group-hover:opacity-100"
-                    disabled={isUploading}
+            <div className="mt-6 space-y-3 animate-fade-in">
+              <h3 className="text-md font-medium text-gray-700 mb-2">Selected Files ({selectedFiles.length})</h3>
+              <div className="max-h-48 overflow-y-auto pr-2 space-y-2 rounded-lg">
+                {selectedFiles.map((file, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 group border border-gray-100 shadow-sm hover:shadow animate-slide-up"
+                    style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-500 flex-shrink-0">
+                        <FileUpload className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{file.name}</p>
+                        <p className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-200 opacity-0 group-hover:opacity-100 rounded-full hover:bg-red-50"
+                      disabled={isUploading}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
           <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-            <h2 className="text-xl sm:text-3xl font-bold text-gray-800">Parsed Resumes</h2>
+            <h2 className="text-xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 mb-4 sm:mb-0">Parsed Resumes</h2>
             <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-2 sm:mt-0">
-              <form onSubmit={handleSearch} className="relative w-full sm:w-auto">
+              <form onSubmit={handleSearch} className="relative w-full sm:w-auto group">
                 <input
                   type="text"
-                  placeholder="Search by name or phone..."
+                  placeholder="Search name or phone"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleSearchKeyPress}
-                  className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  className="w-full pl-10 pr-4 py-2 text-sm border-0 bg-gray-50 rounded-full shadow-sm focus:ring-2 focus:ring-indigo-400 focus:bg-white transition-all duration-300 ease-in-out"
                 />
                 <button
                   type="submit"
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition-colors"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-indigo-500 transition-colors duration-300"
                 >
                   <Search className="w-4 h-4" />
                 </button>
               </form>
-              <button
-                onClick={() => {
-                  console.log('Filter button clicked');
-                  setShowFilters(!showFilters);
-                }}
-                className="flex items-center space-x-2 px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm w-full sm:w-auto z-10"
-              >
-                <Filter className="w-4 h-4" />
-                <span>Filters</span>
-              </button>
-              <TableIcon className="w-5 h-5 text-gray-400" />
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => {
+                    console.log('Filter button clicked');
+                    setShowFilters(!showFilters);
+                  }}
+                  className={`p-2.5 rounded-full shadow-sm transition-all duration-300 transform hover:scale-105 ${
+                    showFilters 
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white animate-pulse' 
+                      : 'bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-indigo-600'
+                  }`}
+                  aria-label="Toggle filters"
+                >
+                  <Filter className="w-5 h-5" />
+                </button>
+                {(hasActiveFilters || searchQuery.trim() !== '') && (
+                  <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium px-3 py-1.5 rounded-full text-sm shadow-sm animate-fade-in">
+                    <span>{filteredCount}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
           <div className="flex flex-wrap gap-4">
             {showFilters && filterValues && (
-              <div className="hidden sm:block w-full bg-gray-50 p-4 rounded-lg space-y-4">
+              <div className="hidden sm:block w-full bg-gradient-to-r from-indigo-50 to-purple-50 p-5 rounded-xl space-y-4 shadow-inner border border-indigo-100 animate-fade-in">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-700">Filter Options</h3>
+                  <h3 className="font-semibold text-gray-800">Filter Options</h3>
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={clearFilters}
                       disabled={!hasActiveFilters}
-                      className={`text-sm text-gray-600 hover:text-gray-800 ${
+                      className={`text-sm px-3 py-1 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-white transition-all ${
                         !hasActiveFilters ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                     >
@@ -447,7 +469,7 @@ function Dashboard() {
                     <button
                       onClick={handleApplyFilters}
                       disabled={!hasActiveFilters || isLoading}
-                      className={`px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-all flex items-center space-x-2 ${
+                      className={`px-4 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm rounded-lg shadow-md hover:shadow-lg transition-all flex items-center space-x-2 transform hover:translate-y-[-2px] ${
                         !hasActiveFilters || isLoading ? 'opacity-75 cursor-not-allowed' : ''
                       }`}
                     >
@@ -468,15 +490,15 @@ function Dashboard() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {Object.entries(filterValues).map(([key, values]) => (
-                    <div key={key}>
+                  {Object.entries(filterValues).map(([key, values], index) => (
+                    <div key={key} className="animate-slide-up" style={{ animationDelay: `${index * 0.05}s` }}>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {key.charAt(0).toUpperCase() + key.slice(1).replace('_', ' ')}
                       </label>
                       <select
                         value={filters[key as keyof FilterParams] || ''}
                         onChange={(e) => handleFilterChange(key as keyof FilterParams, e.target.value || undefined)}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition-all"
                       >
                         <option value="">All {key.replace('_', ' ')}</option>
                         {values.filter(Boolean).map((value: string) => (
@@ -491,41 +513,47 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Total Count Header */}
-        <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
-          <div className="text-gray-700">
-            <span className="font-semibold">Total Resumes:</span> {totalCount}
-          </div>
-          {isLoading && (
-            <div className="flex items-center text-gray-600">
-              <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Loading...</span>
-            </div>
-          )}
-        </div>
+        <ResumeTable 
+          data={resumeData} 
+          setData={setResumeData}
+          total_count={totalCount}
+        />
 
-        <ResumeTable data={resumeData} setData={setResumeData} />
-
-        <div className="flex justify-center items-center space-x-2 mt-4">
+        <div className="flex justify-center items-center space-x-4 mt-6">
           <button
             onClick={handlePreviousPage}
             disabled={currentPage === 1}
-            className="px-3 py-1 border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-300 ${
+              currentPage === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transform hover:translate-y-[-2px]'
+            }`}
           >
-            Previous
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span>Previous</span>
           </button>
-          <span className="text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
-          </span>
+          
+          <div className="bg-white text-indigo-600 px-4 py-2 rounded-lg shadow-sm border border-indigo-100">
+            <span className="font-medium">{currentPage}</span>
+            <span className="text-gray-500"> of </span>
+            <span className="font-medium">{totalPages}</span>
+          </div>
+          
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors duration-200"
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-300 ${
+              currentPage === totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transform hover:translate-y-[-2px]'
+            }`}
           >
-            Next
+            <span>Next</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
           </button>
         </div>
       </div>
