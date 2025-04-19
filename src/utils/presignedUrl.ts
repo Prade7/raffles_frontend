@@ -4,7 +4,7 @@ interface PresignedUrlResponse {
   url: string;
 }
 
-const API_URL = import.meta.env.VITE_MAIN_API_URL;
+const API_URL = "https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws";
 
 export const getPresignedUrl = async (filenames: string[], accessToken: string): Promise<PresignedUrlResponse[]> => {
   try {
@@ -14,9 +14,12 @@ export const getPresignedUrl = async (filenames: string[], accessToken: string):
         'access': accessToken,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ filenames })
+      body: JSON.stringify({
+        files: filenames,
+        signatureType: 'upload'
+      })
     });
-
+    
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('Token expired');
@@ -25,28 +28,10 @@ export const getPresignedUrl = async (filenames: string[], accessToken: string):
     }
 
     const data = await response.json();
+    console.log('Presigned URL response:', data);
     return data;
   } catch (error) {
     console.error('Error getting presigned URL:', error);
     throw error;
   }
 };
-
-export async function requestPresignedUrl(accessToken: string, filename: string): Promise<string> {
-  const response = await fetch('/api/presigned_url', {
-    method: 'POST',
-    headers: {
-      'access': accessToken,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ filename })
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to get presigned URL');
-  }
-
-  return data.url;
-}

@@ -14,8 +14,7 @@ export const getFilterValues = async (accessToken: string): Promise<FilterValues
       headers: {
         'access': accessToken,
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ access_token: accessToken })
+      }
     });
 
     if (!response.ok) {

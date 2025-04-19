@@ -57,3 +57,8 @@ export interface FilterParams {
   subsector?: string;
   search?: string;
 }
+
+export interface PresignedUrlResponse {
+  url: string;
+  file_name: string;
+}

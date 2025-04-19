@@ -1,14 +1,16 @@
 import type { ResumeData, ParsedResume, FilterParams } from '../types/index';
 import { getPresignedUrl } from './presignedUrl';
 
-const API_URL = "https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws/";
+const API_URL = "https://imfu5lsjndb37dohb67aaconwy0zimhy.lambda-url.ap-south-1.on.aws";
 const PARSE_API_URL = "https://tf7hw5m2253i2atsm2q3mke5em0jmxfh.lambda-url.ap-south-1.on.aws";
 
 export const uploadResume = async (files: File[], accessToken: string): Promise<ResumeData[]> => {
   try {
     // Get presigned URLs for all files
     const filenames = files.map(file => file.name);
+    console.log('Requesting presigned URLs for files:', filenames);
     const presignedUrlResponses = await getPresignedUrl(filenames, accessToken);
+    console.log('Received presigned URLs:', presignedUrlResponses);
     
     if (!presignedUrlResponses || presignedUrlResponses.length === 0) {
       throw new Error('Failed to get presigned URLs');
@@ -21,19 +23,22 @@ export const uploadResume = async (files: File[], accessToken: string): Promise<
       const file = files[i];
       const presignedUrlResponse = presignedUrlResponses[i];
 
+      console.log(`Uploading file: ${file.name} to S3 using URL: ${presignedUrlResponse.url}`);
       // Upload file to S3 using the presigned URL
       const uploadResponse = await fetch(presignedUrlResponse.url, {
         method: 'PUT',
         headers: {
-          'Content-Type': file.type
+          'Content-Type': 'application/octet-stream'  // Set to binary
         },
-        body: file
+        body: file  // Send file as binary
       });
 
       if (!uploadResponse.ok) {
         throw new Error('Failed to upload file to S3');
       }
+      console.log(`Successfully uploaded file: ${file.name}`);
 
+      console.log(`Parsing uploaded file: ${presignedUrlResponse.file_name}`);
       // Parse the uploaded file
       const parseResponse = await fetch(`${PARSE_API_URL}/parse`, {
         method: 'POST',
@@ -54,6 +59,7 @@ export const uploadResume = async (files: File[], accessToken: string): Promise<
       }
 
       const data = await parseResponse.json();
+      console.log(`Successfully parsed file: ${presignedUrlResponse.file_name}`);
       results.push(data);
     }
 
