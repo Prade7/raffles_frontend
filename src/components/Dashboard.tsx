@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FileUp as FileUpload, Table as TableIcon, LogOut, Search, Filter, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileUp as FileUpload, LogOut, Search, Filter, X, CheckCircle, AlertCircle } from 'lucide-react';
 import ResumeTable from './ResumeTable';
 import { useAuth } from '../context/AuthContext';
-import { getResumes, loginUser, logoutUser, uploadResume } from '../utils/api';
+import { getResumes, logoutUser, uploadResume } from '../utils/api';
 import { getFilterValues } from '../utils/filters';
 import type { ResumeData, FilterValues, FilterParams } from '../types';
 
@@ -24,7 +24,6 @@ function Dashboard() {
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: string }>({});
   const [notification, setNotification] = useState<Notification | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [offset, setOffset] = useState(0);
